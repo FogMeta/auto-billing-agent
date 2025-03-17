@@ -29,8 +29,9 @@ load_dotenv()
 def initialize_agent():
     """Initialize the agent with an Ethereum Account Wallet Provider."""
     # Initialize LLM
-    llm = ChatOpenAI(model="meta-llama/Llama-3.3-70B-Instruct", base_url="https://inference.nebulablock.com/v1",
-                     api_key="sk-CuuB677iOeR15xCPeAlzcw")
+    # llm = ChatOpenAI(model="meta-llama/Llama-3.3-70B-Instruct", base_url="https://inference.nebulablock.com/v1",
+    #                  api_key="sk-CuuB677iOeR15xCPeAlzcw")
+    llm = ChatOpenAI(model=os.getenv('LLM_MODEL'), base_url=os.getenv('LLM_BASE_URL'), api_key=os.getenv("LLM_API_KEY"))
 
     # Ensure PRIVATE_KEY is set
     private_key = os.getenv("PRIVATE_KEY")
@@ -117,11 +118,12 @@ def run_chat_mode(agent_executor, config):
             user_input = input("\nPrompt: ")
             if user_input.lower() == "exit":
                 break
-
+            print("user_input:", user_input, config)
             # Run agent with the user's input in chat mode
             for chunk in agent_executor.stream(
                 {"messages": [HumanMessage(content=user_input)]}, config
             ):
+                print("chunk:",chunk)
                 if "agent" in chunk:
                     print(chunk["agent"]["messages"][0].content)
                 elif "tools" in chunk:
