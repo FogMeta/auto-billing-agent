@@ -18,7 +18,6 @@ import openai  # Add OpenAI integration
 class DownloadPDFSchema(BaseModel):
     """Schema for downloading PDF."""
     pdf_url: str = Field(..., description="URL of the PDF file to download")
-    save_path: str = Field(..., description="Path where the PDF should be saved")
 
 
 class BillTransferSchema(BaseModel):
@@ -45,53 +44,65 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
         
         It takes the following inputs:
         - pdf_url: The URL of the PDF file to download
-        - save_path: The local path where the PDF should be saved
         """,
         schema=DownloadPDFSchema,
     )
     def download_pdf(self, args: dict[str, Any]) -> str:
-        """Download a PDF file from the provided URL.
-
-        Args:
-            args (dict[str, Any]): Input arguments for the action.
-
-        Returns:
-            str: A message containing the action response or error details.
-        """
         try:
             validated_args = DownloadPDFSchema(**args)
 
-            # Create directory if it doesn't exist
-            save_dir = os.path.dirname(validated_args.save_path)
-            if save_dir:
-                Path(save_dir).mkdir(parents=True, exist_ok=True)
+            current_dir = Path(__file__).parent
+            download_dir = current_dir / "download"
+            download_dir.mkdir(parents=True, exist_ok=True)
+            
+            filename = os.path.basename(validated_args.pdf_url)
+            if not filename.endswith('.pdf'):
+                filename = f"{filename}.pdf"
+            
+            save_path = download_dir / filename
 
             # Download the PDF
             response = requests.get(validated_args.pdf_url)
             response.raise_for_status()
 
-            # Save the PDF
-            with open(validated_args.save_path, 'wb') as f:
+            with open(save_path, 'wb') as f:
                 f.write(response.content)
 
-            return f"Successfully downloaded PDF to {validated_args.save_path}"
+            return f"Successfully downloaded PDF to {save_path}"
         except Exception as e:
             return f"Error downloading PDF: {e!s}"
 
     @create_action(
         name="process_bill_transfer",
         description="""
-        Process bill transfer from buyer's wallet to seller's wallet.
+        Execute an ERC20 token transfer based on invoice analysis results. This function handles the payment process for bills and invoices.
         
         Input parameters:
-        - buyer_address: Buyer's wallet address
-        - seller_address: Seller's wallet address
-        - token_contract: Token contract address
-        - amount: Transfer amount
+        - buyer_address: The EVM wallet address of the invoice payer/buyer
+        - seller_address: The EVM wallet address of the invoice issuer/seller
+        - token_contract: The ERC20 token contract address for payment (e.g., USDT, USDC)
+        - amount: The payment amount in token units (e.g., 100 USDT, not Wei)
+        
+        The function will:
+        1. Validate all wallet addresses
+        2. Check token balance and gas fees
+        3. Execute the token transfer
+        4. Wait for transaction confirmation
         
         Important notes:
-        - Ensure buyer has sufficient token balance
-        - Ensure buyer has sufficient gas fees
+        - All addresses must be valid EVM addresses
+        - Amount is automatically converted to the correct token decimals
+        - Transaction will fail if buyer has insufficient balance
+        - Returns transaction details or error message
+        
+        Example usage:
+        For an invoice of 100 USDT:
+        {
+            "buyer_address": "0x123...",
+            "seller_address": "0x456...",
+            "token_contract": "0x789...",
+            "amount": 100.0
+        }
         """,
         schema=BillTransferSchema,
     )
@@ -128,20 +139,35 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
             # Prepare transfer data
             data = contract.encode_abi(
                 "transfer",
-                [token_contract, amount_wei]
+                [seller_address, amount_wei]
             )
             
+            # Check gas balance
+            gas_balance = Web3().eth.get_balance(buyer_address)
+            estimated_gas = Web3().eth.estimate_gas({
+                "from": buyer_address,
+                "to": token_contract,
+                "data": data
+            })
+            
+            if gas_balance < estimated_gas:
+                return f"Error: Insufficient gas balance for transaction"
+                
             # Send transaction
             tx_hash = wallet_provider.send_transaction(
                 {
                     "from": buyer_address,
-                    "to": seller_address,
+                    "to": token_contract,
                     "data": data,
                 }
             )
             
             # Wait for transaction confirmation
-            wallet_provider.wait_for_transaction_receipt(tx_hash)
+            receipt = wallet_provider.wait_for_transaction_receipt(tx_hash)
+            
+            # Check transaction status
+            if receipt['status'] != 1:
+                return f"Error: Transaction failed. Hash: {tx_hash}"
             
             return (
                 f"Transfer successful!\n"
