@@ -93,3 +93,5 @@ web3==7.9.0
 websockets==13.1
 yarl==1.18.3
 zstandard==0.23.0
+telegramify-markdown==0.4.2
+python-telegram-bot==21.10

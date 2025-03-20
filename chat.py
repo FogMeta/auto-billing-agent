@@ -170,6 +170,13 @@ def fetch_billing_info():
         print(f"Error fetching data: {e}")
 
 
+# def query_question():
+#     agent_executor, config = initialize_agent()
+#     for chunk in agent_executor.stream(
+#             {"messages": [HumanMessage(content=user_input)]}, config
+#     ):
+#
+
 def start_periodic_fetch():
     """Start fetching billing info every 10 seconds."""
     while True:

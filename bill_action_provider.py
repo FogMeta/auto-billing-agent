@@ -15,6 +15,7 @@ from coinbase_agentkit.action_providers.erc20.erc20_action_provider import ERC20
 from pydantic import BaseModel, Field
 import openai  # Add OpenAI integration
 
+
 class DownloadPDFSchema(BaseModel):
     """Schema for downloading PDF."""
     pdf_url: str = Field(..., description="URL of the PDF file to download")
@@ -34,8 +35,6 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
     def __init__(self) -> None:
         """Initialize the bill action provider."""
         super().__init__("bill", [])
-        # Initialize OpenAI client
-        self.openai_client = openai.OpenAI()
 
     @create_action(
         name="download_pdf",
@@ -44,33 +43,50 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
         
         It takes the following inputs:
         - pdf_url: The URL of the PDF file to download
+        
+        Returns:
+        - The local path where the PDF was saved
         """,
         schema=DownloadPDFSchema,
     )
     def download_pdf(self, args: dict[str, Any]) -> str:
+        """Download a PDF file from the provided URL.
+
+        Args:
+            args (dict[str, Any]): Input arguments for the action.
+
+        Returns:
+            str: The local path where the PDF was saved
+        """
         try:
             validated_args = DownloadPDFSchema(**args)
-
+            print("validated_args: ", validated_args)
+            # Create download directory
             current_dir = Path(__file__).parent
             download_dir = current_dir / "download"
             download_dir.mkdir(parents=True, exist_ok=True)
-            
+
+            # Generate filename from URL
             filename = os.path.basename(validated_args.pdf_url)
             if not filename.endswith('.pdf'):
                 filename = f"{filename}.pdf"
-            
+
             save_path = download_dir / filename
 
             # Download the PDF
             response = requests.get(validated_args.pdf_url)
             response.raise_for_status()
 
+            # Save the PDF
             with open(save_path, 'wb') as f:
                 f.write(response.content)
+            print(save_path)
+            return response.content
 
-            return f"Successfully downloaded PDF to {save_path}"
+        except requests.exceptions.RequestException as e:
+            return f"Error downloading PDF: {str(e)}"
         except Exception as e:
-            return f"Error downloading PDF: {e!s}"
+            return f"Error processing PDF: {str(e)}"
 
     @create_action(
         name="process_bill_transfer",
@@ -94,15 +110,7 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
         - Amount is automatically converted to the correct token decimals
         - Transaction will fail if buyer has insufficient balance
         - Returns transaction details or error message
-        
-        Example usage:
-        For an invoice of 100 USDT:
-        {
-            "buyer_address": "0x123...",
-            "seller_address": "0x456...",
-            "token_contract": "0x789...",
-            "amount": 100.0
-        }
+        - Do not use example data. Only extract real information from the invoice content.
         """,
         schema=BillTransferSchema,
     )
@@ -118,30 +126,31 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
         """
         try:
             validated_args = BillTransferSchema(**args)
-            
+            print("validated_args: ", validated_args)
+
             # Validate address format
             buyer_address = Web3.to_checksum_address(validated_args.buyer_address)
             seller_address = Web3.to_checksum_address(validated_args.seller_address)
             token_contract = Web3.to_checksum_address(validated_args.token_contract)
-            
+
             # Create token contract instance
             contract = Web3().eth.contract(address=token_contract, abi=ERC20_ABI)
-            
+
             # Get token decimals
             decimals = contract.functions.decimals().call()
             amount_wei = int(validated_args.amount * (10 ** decimals))
-            
+
             # Check buyer's balance
             balance = contract.functions.balanceOf(buyer_address).call()
             if balance < amount_wei:
                 return f"Error: Insufficient balance. Current balance: {balance / (10 ** decimals)}, Required amount: {validated_args.amount}"
-            
+
             # Prepare transfer data
             data = contract.encode_abi(
                 "transfer",
                 [seller_address, amount_wei]
             )
-            
+
             # Check gas balance
             gas_balance = Web3().eth.get_balance(buyer_address)
             estimated_gas = Web3().eth.estimate_gas({
@@ -149,10 +158,10 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                 "to": token_contract,
                 "data": data
             })
-            
+
             if gas_balance < estimated_gas:
                 return f"Error: Insufficient gas balance for transaction"
-                
+
             # Send transaction
             tx_hash = wallet_provider.send_transaction(
                 {
@@ -161,20 +170,20 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                     "data": data,
                 }
             )
-            
+
             # Wait for transaction confirmation
             receipt = wallet_provider.wait_for_transaction_receipt(tx_hash)
-            
+
             # Check transaction status
             if receipt['status'] != 1:
                 return f"Error: Transaction failed. Hash: {tx_hash}"
-            
+
             return (
                 f"Transfer successful!\n"
                 f"Transferred {validated_args.amount} tokens from {buyer_address} to {seller_address}\n"
                 f"Transaction hash: {tx_hash}"
             )
-            
+
         except Exception as e:
             return f"Transfer failed: {e!s}"
 
