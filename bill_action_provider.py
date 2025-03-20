@@ -114,9 +114,12 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                    - Amount
                    - Currency
                    - Payment Due Date
-                    
+                
+                Additional Information: 
+            
                 Please return the information in Markdown format, ensuring all fields are included.
                 Note: "Currency" should show ERC20 Token Symbol and Contract Address
+                Note: Verify whether the locally instantiated wallet address matches the client wallet address in the invoice. 
 
                 Invoice Content:
                 {pdf_text}""".format(pdf_text=pdf_text)
@@ -130,114 +133,114 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
         except Exception as e:
             return {"error": f"Processing failed: {str(e)}"}
 
-    # @create_action(
-    #     name="process_bill_transfer",
-    #     description="""
-    #     Executes a secure ERC20 token transfer for invoice payments with comprehensive validation.
-    #
-    #     Input parameters:
-    #     - buyer_address: The EVM-compatible wallet address of the payer (must be a valid checksum address)
-    #     - seller_address: The EVM-compatible wallet address of the payee (must be a valid checksum address)
-    #     - token_contract: The ERC20 token contract address for the payment currency (e.g., USDT, USDC)
-    #     - amount: The exact payment amount in token units (automatically converts to Wei)
-    #
-    #     Security checks:
-    #     1. Validates all wallet addresses against EVM standards
-    #     2. Verifies sufficient token balance in buyer's wallet
-    #     3. Confirms adequate gas balance for transaction
-    #     4. Monitors transaction confirmation status
-    #
-    #     Technical details:
-    #     - Automatically handles token decimals conversion
-    #     - Implements gas estimation and balance verification
-    #     - Provides transaction confirmation monitoring
-    #     - Returns detailed transaction status and hash
-    #
-    #     Error handling:
-    #     - Insufficient token balance
-    #     - Insufficient gas balance
-    #     - Invalid addresses
-    #     - Failed transactions
-    #     - Network issues
-    #
-    #     Returns:
-    #     - Success: Transaction hash and confirmation details
-    #     - Failure: Detailed error message with specific reason
-    #     """,
-    #     schema=BillTransferSchema,
-    # )
-    # def process_bill_transfer(self, wallet_provider: EvmWalletProvider, args: dict[str, Any]) -> str:
-    #     """Process bill transfer from buyer's wallet to seller's wallet.
-    #
-    #     Args:
-    #         wallet_provider (EvmWalletProvider): Wallet provider instance
-    #         args (dict[str, Any]): Input arguments
-    #
-    #     Returns:
-    #         str: Message containing operation response or error details
-    #     """
-    #     try:
-    #         validated_args = BillTransferSchema(**args)
-    #         print("validated_args: ", validated_args)
-    #
-    #         # Validate address format
-    #         buyer_address = Web3.to_checksum_address(validated_args.buyer_address)
-    #         seller_address = Web3.to_checksum_address(validated_args.seller_address)
-    #         token_contract = Web3.to_checksum_address(validated_args.token_contract)
-    #
-    #         # Create token contract instance
-    #         contract = Web3().eth.contract(address=token_contract, abi=ERC20_ABI)
-    #
-    #         # Get token decimals
-    #         decimals = contract.functions.decimals().call()
-    #         amount_wei = int(validated_args.amount * (10 ** decimals))
-    #
-    #         # Check buyer's balance
-    #         balance = contract.functions.balanceOf(buyer_address).call()
-    #         if balance < amount_wei:
-    #             return f"Error: Insufficient balance. Current balance: {balance / (10 ** decimals)}, Required amount: {validated_args.amount}"
-    #
-    #         # Prepare transfer data
-    #         data = contract.encode_abi(
-    #             "transfer",
-    #             [seller_address, amount_wei]
-    #         )
-    #
-    #         # Check gas balance
-    #         gas_balance = Web3().eth.get_balance(buyer_address)
-    #         estimated_gas = Web3().eth.estimate_gas({
-    #             "from": buyer_address,
-    #             "to": token_contract,
-    #             "data": data
-    #         })
-    #
-    #         if gas_balance < estimated_gas:
-    #             return f"Error: Insufficient gas balance for transaction"
-    #
-    #         # Send transaction
-    #         tx_hash = wallet_provider.send_transaction(
-    #             {
-    #                 "from": buyer_address,
-    #                 "to": token_contract,
-    #                 "data": data,
-    #             }
-    #         )
-    #
-    #         # Wait for transaction confirmation
-    #         receipt = wallet_provider.wait_for_transaction_receipt(tx_hash)
-    #
-    #         # Check transaction status
-    #         if receipt['status'] != 1:
-    #             return f"Error: Transaction failed. Hash: {tx_hash}"
-    #
-    #         return (
-    #             f"Transfer successful!\n"
-    #             f"Transferred {validated_args.amount} tokens from {buyer_address} to {seller_address}\n"
-    #             f"Transaction hash: {tx_hash}"
-    #         )
-    #
-    #     except Exception as e:
-    #         return f"Transfer failed: {e!s}"
+    @create_action(
+        name="process_bill_transfer",
+        description="""
+        Executes a secure ERC20 token transfer for invoice payments with comprehensive validation.
+
+        Input parameters:
+        - buyer_address: The EVM-compatible wallet address of the payer (must be a valid checksum address)
+        - seller_address: The EVM-compatible wallet address of the payee (must be a valid checksum address)
+        - token_contract: The ERC20 token contract address for the payment currency (e.g., USDT, USDC)
+        - amount: The exact payment amount in token units (automatically converts to Wei)
+
+        Security checks:
+        1. Validates all wallet addresses against EVM standards
+        2. Verifies sufficient token balance in buyer's wallet
+        3. Confirms adequate gas balance for transaction
+        4. Monitors transaction confirmation status
+
+        Technical details:
+        - Automatically handles token decimals conversion
+        - Implements gas estimation and balance verification
+        - Provides transaction confirmation monitoring
+        - Returns detailed transaction status and hash
+
+        Error handling:
+        - Insufficient token balance
+        - Insufficient gas balance
+        - Invalid addresses
+        - Failed transactions
+        - Network issues
+
+        Returns:
+        - Success: Transaction hash and confirmation details
+        - Failure: Detailed error message with specific reason
+        """,
+        schema=BillTransferSchema,
+    )
+    def process_bill_transfer(self, wallet_provider: EvmWalletProvider, args: dict[str, Any]) -> str:
+        """Process bill transfer from buyer's wallet to seller's wallet.
+
+        Args:
+            wallet_provider (EvmWalletProvider): Wallet provider instance
+            args (dict[str, Any]): Input arguments
+
+        Returns:
+            str: Message containing operation response or error details
+        """
+        try:
+            validated_args = BillTransferSchema(**args)
+            print("validated_args: ", validated_args)
+
+            # Validate address format
+            buyer_address = Web3.to_checksum_address(validated_args.buyer_address)
+            seller_address = Web3.to_checksum_address(validated_args.seller_address)
+            token_contract = Web3.to_checksum_address(validated_args.token_contract)
+
+            # Create token contract instance
+            contract = Web3().eth.contract(address=token_contract, abi=ERC20_ABI)
+
+            # Get token decimals
+            decimals = contract.functions.decimals().call()
+            amount_wei = int(validated_args.amount * (10 ** decimals))
+
+            # Check buyer's balance
+            balance = contract.functions.balanceOf(buyer_address).call()
+            if balance < amount_wei:
+                return f"Error: Insufficient balance. Current balance: {balance / (10 ** decimals)}, Required amount: {validated_args.amount}"
+
+            # Prepare transfer data
+            data = contract.encode_abi(
+                "transfer",
+                [seller_address, amount_wei]
+            )
+
+            # Check gas balance
+            gas_balance = Web3().eth.get_balance(buyer_address)
+            estimated_gas = Web3().eth.estimate_gas({
+                "from": buyer_address,
+                "to": token_contract,
+                "data": data
+            })
+
+            if gas_balance < estimated_gas:
+                return f"Error: Insufficient gas balance for transaction"
+
+            # Send transaction
+            tx_hash = wallet_provider.send_transaction(
+                {
+                    "from": buyer_address,
+                    "to": token_contract,
+                    "data": data,
+                }
+            )
+
+            # Wait for transaction confirmation
+            receipt = wallet_provider.wait_for_transaction_receipt(tx_hash)
+
+            # Check transaction status
+            if receipt['status'] != 1:
+                return f"Error: Transaction failed. Hash: {tx_hash}"
+
+            return (
+                f"Transfer successful!\n"
+                f"Transferred {validated_args.amount} tokens from {buyer_address} to {seller_address}\n"
+                f"Transaction hash: {tx_hash}"
+            )
+
+        except Exception as e:
+            return f"Transfer failed: {e!s}"
 
     def supports_network(self, network: Network) -> bool:
         """Check if the network is supported by this action provider.
