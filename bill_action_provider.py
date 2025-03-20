@@ -124,15 +124,10 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                                      
                 Additional Information (only displayed if there is an issue):
                    - If the current **{address}** does not match the client account in the invoice, display **only**:  
-                     **Error: Account mismatch. Transaction cannot proceed.**  
-                     Invoice Account: should be Client Wallet Address(or client account)  
-                     Current Account: {address} 
-                   - If the account matches but the balance `{balance}` is insufficient, display **only**:  
-                     **Error: Insufficient balance. Payment cannot be processed.**  
-                     Required: 
-                     Available: 
+                     **Error: Account mismatch. Transaction cannot proceed.** Invoice Account: should be Client Wallet Address(or client account) Current Account: {address} 
                    - **Ensure payment is sent to the Payment Contract Address: payment_contract_address(from "Payment Information" part)**
-            
+                
+                Output must strictly follow this format without any additional text or explanation.
                 Please return the information in Markdown format, ensuring all fields are included.
                 Note: "Currency" should show ERC20 Token Symbol and Contract Address
 
