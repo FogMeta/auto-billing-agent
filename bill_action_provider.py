@@ -89,7 +89,7 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
             # Define prompt for invoice analysis
             prompt = """Analyze the invoice content and extract key details. Transfer is strictly prohibited:
 
-                . Basic Invoice Information:
+                1. Basic Invoice Information:
                    - Invoice Number
                    - Invoice Date
 
@@ -112,10 +112,11 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                    - Client Wallet Address
                    - Payment Contract Address
                    - Amount
-                   - Currency (ERC20 Token Symbol and Contract Address)
+                   - Currency
                    - Payment Due Date
                     
                 Please return the information in Markdown format, ensuring all fields are included.
+                Note: "Currency" should show ERC20 Token Symbol and Contract Address
 
                 Invoice Content:
                 {pdf_text}""".format(pdf_text=pdf_text)
