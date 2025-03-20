@@ -5,6 +5,7 @@ import time
 import json
 
 import requests
+import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -28,6 +29,7 @@ from coinbase_agentkit import (
 import PyPDF2
 from io import BytesIO
 from coinbase_agentkit_langchain import get_langchain_tools
+from bill_action_provider import bill_action_provider
 
 # Load environment variables
 load_dotenv()
@@ -73,6 +75,7 @@ def initialize_agent():
                 pyth_action_provider(),
                 wallet_action_provider(),
                 weth_action_provider(),
+                bill_action_provider(),
             ],
         )
     )
@@ -170,12 +173,18 @@ def fetch_billing_info():
         print(f"Error fetching data: {e}")
 
 
-# def query_question():
-#     agent_executor, config = initialize_agent()
-#     for chunk in agent_executor.stream(
-#             {"messages": [HumanMessage(content=user_input)]}, config
-#     ):
-#
+def query_question(user_input: str):
+    agent_executor, config = initialize_agent()
+    response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
+    print("response:", response['messages'])
+    result = ""
+    for message in response['messages']:
+        print("name: ", message.name)
+        if hasattr(message, 'name') and message.name is not None:
+            result = message.content
+    print("result: ", result)
+    return result
+
 
 def start_periodic_fetch():
     """Start fetching billing info every 10 seconds."""
@@ -252,28 +261,31 @@ class ChatResponse(BaseModel):
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest) -> Dict[str, str]:
-    """API endpoint to interact with the agent."""
-    try:
-        agent_executor = app.state.agent_executor
-        agent_config = app.state.agent_config
-        print("input: ", request.message, "agent_config:", agent_config)
-        response_chunks = []
-        for chunk in agent_executor.stream(
-                {"messages": [HumanMessage(content=request.message)]},
-                agent_config
-        ):
-            print("chunk:", chunk)
-            if "agent" in chunk:
-                response_chunks.append(chunk["agent"]["messages"][0].content)
-            elif "tools" in chunk:
-                response_chunks.append(chunk["tools"]["messages"][0].content)
+    data = query_question(request.message)
+    return {"response": data}
 
-        return {"response": "\n".join(response_chunks)}
-    except Exception as e:
-        logger.error(f"Error processing request: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    """API endpoint to interact with the agent."""
+    # try:
+    #     agent_executor = app.state.agent_executor
+    #     agent_config = app.state.agent_config
+    #     print("input: ", request.message, "agent_config:", agent_config)
+    #     response_chunks = []
+    #     for chunk in agent_executor.stream(
+    #             {"messages": [HumanMessage(content=request.message)]},
+    #             agent_config
+    #     ):
+    #         print("chunk:", chunk)
+    #         if "agent" in chunk:
+    #             response_chunks.append(chunk["agent"]["messages"][0].content)
+    #         elif "tools" in chunk:
+    #             response_chunks.append(chunk["tools"]["messages"][0].content)
+    #
+    #     return {"response": "\n".join(response_chunks)}
+    # except Exception as e:
+    #     logger.error(f"Error processing request: {e}")
+    #     raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 if __name__ == "__main__":
-    # uvicorn.run(app, host="0.0.0.0", port=8000)
-    start_periodic_fetch()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # start_periodic_fetch()

@@ -1,0 +1,42 @@
+import asyncio
+import os
+import telegramify_markdown
+import telegramify_markdown.customize as customize
+from telegram import Update, MessageEntity
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+import logging
+from dotenv import load_dotenv
+from chat import query_question
+pid = os.getpid()
+
+customize.strict_markdown = False
+# Configure logging.
+logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a welcome message when the /start command is issued."""
+    await update.message.reply_text("Welcome to the Billing Bot! Ask me any question about billing.\n\n")
+
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_question = update.message.text
+    await update.message.reply_text("Processing your question, please wait...")
+    try:
+        answer = query_question(user_question)
+        logging.info("answer: %s", answer)
+    except Exception as e:
+        logging.error("Error processing question: %s", e)
+        answer = "There was an error processing your question. Please try again later."
+    await update.message.reply_text(text=telegramify_markdown.markdownify(answer), parse_mode="MarkdownV2")
+
+
+if __name__ == '__main__':
+    load_dotenv()  # Load environment variables from .env file
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Get the token from the .env file
+    logging.info("TELEGRAM_BOT_TOKEN: %s", TELEGRAM_BOT_TOKEN)
+    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Entity(MessageEntity.MENTION), handle_message))
+    application.run_polling()
