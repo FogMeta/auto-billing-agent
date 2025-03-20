@@ -125,13 +125,13 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                 Additional Information (only displayed in case of discrepancies):
                    - If the current **{address}** does not match the client account in the invoice, display:  
                      **Mismatch Account Detected! Transaction cannot proceed.**  
-                     Expected: `{expected_address}`  
-                     Current: `{address}`  
+                     Expected: Client Wallet Address  
+                     Current: {address}  
                    - If the account matches but the balance is insufficient for payment（{balance}）, display:  
                      **Insufficient balance! Unable to process payment.**  
-                     Required: `{required_amount}` `{currency}`  
-                     Available: `{balance}` `{currency}`
-                   - **Ensure payment is sent to the Payment Contract Address: `{payment_contract_address}`**
+                     Required: Amount(from "Payment Information" part) Currency(from "Payment Information" part)  
+                     Available: (get the balance from {balance})  Currency(from "Payment Information" part)
+                   - **Ensure payment is sent to the Payment Contract Address: payment_contract_address(from "Payment Information" part)**
             
                 Please return the information in Markdown format, ensuring all fields are included.
                 Note: "Currency" should show ERC20 Token Symbol and Contract Address
