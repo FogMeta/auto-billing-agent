@@ -109,10 +109,12 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                    - Contact Details
 
                 5. Payment Information:
+                   - Client Wallet Address
+                   - Payment Contract Address
                    - Amount
-                   - Currency
+                   - Currency (ERC20 Token Symbol and Contract Address)
                    - Payment Due Date
-
+                    
                 Please return the information in Markdown format, ensuring all fields are included.
 
                 Invoice Content:
