@@ -120,7 +120,7 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                 Please return the information in Markdown format, ensuring all fields are included.
                 Note: "Currency" should show ERC20 Token Symbol and Contract Address
                 Note: you should show the result of the following items under "Additional Information" part:
-                       - Verify whether the current account matches the account in the invoice. If they do not match, the transaction cannot proceed.
+                       - Verify whether the current account matches the client account in the invoice. If they do not match, the transaction cannot proceed.
                        - Check whether the current account balance is sufficient for payment.
                        - Emphasize the payee account. 
 
