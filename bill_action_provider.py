@@ -121,16 +121,16 @@ class BillActionProvider(ActionProvider[EvmWalletProvider]):
                    - Amount
                    - Currency
                    - Payment Due Date
-                
-                Additional Information (only displayed in case of discrepancies):
-                   - If the current **{address}** does not match the client account in the invoice, display:  
-                     **Mismatch Account Detected! Transaction cannot proceed.**  
-                     Expected: Client Wallet Address  
-                     Current: {address}  
-                   - If the account matches but the balance is insufficient for payment（{balance}）, display:  
-                     **Insufficient balance! Unable to process payment.**  
-                     Required: Amount(from "Payment Information" part) Currency(from "Payment Information" part)  
-                     Available: (get the balance from {balance})  Currency(from "Payment Information" part)
+                                     
+                Additional Information (only displayed if there is an issue):
+                   - If the current **{address}** does not match the client account in the invoice, display **only**:  
+                     **Error: Account mismatch. Transaction cannot proceed.**  
+                     Invoice Account: should be Client Wallet Address(or client account)  
+                     Current Account: {address} 
+                   - If the account matches but the balance `{balance}` is insufficient, display **only**:  
+                     **Error: Insufficient balance. Payment cannot be processed.**  
+                     Required: 
+                     Available: 
                    - **Ensure payment is sent to the Payment Contract Address: payment_contract_address(from "Payment Information" part)**
             
                 Please return the information in Markdown format, ensuring all fields are included.
