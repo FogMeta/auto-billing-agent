@@ -30,6 +30,7 @@ import PyPDF2
 from io import BytesIO
 from coinbase_agentkit_langchain import get_langchain_tools
 from bill_action_provider import bill_action_provider
+from storacha_action_provider import storacha_action_provider
 
 # Load environment variables
 load_dotenv()
@@ -76,6 +77,7 @@ def initialize_agent():
                 wallet_action_provider(),
                 weth_action_provider(),
                 bill_action_provider(),
+                storacha_action_provider(),
             ],
         )
     )
@@ -178,11 +180,14 @@ def query_question(user_input: str):
     response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
     print("response:", response['messages'])
     result = ""
-    for message in response['messages']:
-        print("name: ", message.name)
-        if hasattr(message, 'name') and message.name is not None:
-            result = message.content
-    print("result: ", result)
+    with open('aa.txt', 'w', encoding='utf-8') as f:
+        for message in response['messages']:
+            f.write(f"{message}\n")
+            f.flush()
+            print("name: ", message.name)
+            if hasattr(message, 'name') and message.name is not None:
+                result = message.content
+        print("result: ", result)
     return result
 
 

@@ -19,6 +19,9 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
+from bill_action_provider import bill_action_provider
+from storacha_action_provider import storacha_action_provider
+
 
 # Configure a file to persist the agent's CDP API Wallet Data.
 wallet_data_file = "wallet_data.txt"
@@ -55,6 +58,8 @@ def initialize_agent():
                 pyth_action_provider(),
                 wallet_action_provider(),
                 weth_action_provider(),
+                bill_action_provider(),
+                storacha_action_provider(),
             ],
         )
     )
@@ -119,16 +124,17 @@ def run_chat_mode(agent_executor, config):
             if user_input.lower() == "exit":
                 break
             print("user_input:", user_input, config)
-            # Run agent with the user's input in chat mode
-            for chunk in agent_executor.stream(
-                {"messages": [HumanMessage(content=user_input)]}, config
-            ):
-                print("chunk:",chunk)
-                if "agent" in chunk:
-                    print(chunk["agent"]["messages"][0].content)
-                elif "tools" in chunk:
-                    print(chunk["tools"]["messages"][0].content)
-                print("-------------------")
+            
+            with open('aa.txt', 'w', encoding='utf-8') as f:
+                for chunk in agent_executor.stream({"messages": [HumanMessage(content=user_input)]}, config):
+                    f.write(f"{chunk}\n")
+                    f.flush()
+                    if "agent" in chunk:
+                        content = chunk["agent"]["messages"][0].content
+                        print(content)
+                    elif "tools" in chunk:
+                        content = chunk["tools"]["messages"][0].content
+                        print(content)
 
         except KeyboardInterrupt:
             print("Goodbye Agent!")
