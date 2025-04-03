@@ -242,7 +242,6 @@ def query_question(user_input: str):
     auto_save_think = int(os.environ.get("AUTO_SAVE_THINK"))
     result = ""
     if auto_save_think == 1:
-        user_input += "and last save the analysis process and give me a link"
         response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
         with open('process.txt', 'w', encoding='utf-8') as f:
             for message in response['messages']:
@@ -258,7 +257,7 @@ def query_question(user_input: str):
         cid = storacha_client.upload_file(space_did, "process.txt")
         # Generate download URL
         download_url = get_file_url(cid)
-        msg = f"Analysis processing save successfully, link: {download_url}"
+        msg = f"The processing steps are as follows: {download_url}"
         result += msg+"\n"
         os.remove("process.txt")
     else:
@@ -270,19 +269,32 @@ def query_question(user_input: str):
                 result += message.content+"\n"
 
     print("result: ", result)
-    prompt = f"""Based on the information provided below:
-    {result}
+    prompt = f"""Based on the information provided below, generate a clear and concise summary report following these rules:
 
-    Generate a final summary without adding any external content. Follow these rules:
-    1. Turn raw data into a natural, conversational response
-    2. Keep it concise yet informative
-    3. Focus on the most relevant points
-    4. Use the context of the user's question appropriately
-    5. Don’t just repeat the original data"""
+1. Use natural, conversational language — do not list raw data line by line.
+2. Structure the output in two distinct parts:
+
+---
+(1) Final Analysis Result  
+Provide a concise summary of the overall situation. Highlight any key points such as issues, inconsistencies, missing information, or required actions. The tone should be professional and informative.
+
+(2) Raw Data Summary  
+Present the original data in a clean and structured format.  
+- Accurately reflect the input without adding any new or external information  
+- Use bullet points or clearly organized sections  
+- Mark any fields that require **special attention** (e.g., errors, mismatches, missing values, warnings)  
+
+Additional Instructions:
+- Do not include content not explicitly provided  
+- Do not speculate or infer beyond the given data  
+- Ensure the summary is easy to read and highlights what matters most
+
+Below is the data to analyze:
+{result}"""
 
     llm = ChatOpenAI(model=os.getenv('LLM_MODEL'), base_url=os.getenv('LLM_BASE_URL'), api_key=os.getenv("LLM_API_KEY"))
     print("prompt:", prompt)
-    response = llm.create([HumanMessage(content=prompt)])
+    response = llm.invoke([HumanMessage(content=prompt)])
     logging.info("\nFinal response: %s", response)
     return response.content
 
