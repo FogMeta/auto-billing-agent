@@ -124,17 +124,27 @@ def run_chat_mode(agent_executor, config):
             if user_input.lower() == "exit":
                 break
             print("user_input:", user_input, config)
-            
-            with open('aa.txt', 'w', encoding='utf-8') as f:
-                for chunk in agent_executor.stream({"messages": [HumanMessage(content=user_input)]}, config):
-                    f.write(f"{chunk}\n")
-                    f.flush()
-                    if "agent" in chunk:
-                        content = chunk["agent"]["messages"][0].content
-                        print(content)
-                    elif "tools" in chunk:
-                        content = chunk["tools"]["messages"][0].content
-                        print(content)
+
+            for chunk in agent_executor.stream({"messages": [HumanMessage(content=user_input)]}, config):
+                print("chunk: ", chunk)
+                if "agent" in chunk:
+                    content = chunk["agent"]["messages"][0].content
+                    print(content)
+                elif "tools" in chunk:
+                    content = chunk["tools"]["messages"][0].content
+                    print(content)
+            # with open('aa.txt', 'w', encoding='utf-8') as f:
+            #     f.write(f"{user_input}\n")
+            #     for chunk in agent_executor.stream({"messages": [HumanMessage(content=user_input)]}, config):
+            #         f.write(f"chunk:  {chunk}\n")
+            #         print("chunk: ", chunk)
+            #         f.flush()
+            #         if "agent" in chunk:
+            #             content = chunk["agent"]["messages"][0].content
+            #             print(content)
+            #         elif "tools" in chunk:
+            #             content = chunk["tools"]["messages"][0].content
+            #             print(content)
 
         except KeyboardInterrupt:
             print("Goodbye Agent!")

@@ -31,13 +31,75 @@ from io import BytesIO
 from coinbase_agentkit_langchain import get_langchain_tools
 from bill_action_provider import bill_action_provider
 from storacha_action_provider import storacha_action_provider
-
+from storacha_client import StorachaClient, get_file_url
 # Load environment variables
 load_dotenv()
-
+import httpx
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class LLMClient:
+    """Manages communication with the LLM provider."""
+
+    def __init__(self, api_key: str, model: str, api_url: str) -> None:
+        self.api_key: str = api_key
+        self.model = model
+        self.api_url = api_url
+        self.timeout_config = httpx.Timeout(
+            connect=10.0,
+            read=60.0,
+            write=30.0,
+            pool=10.0
+        ),
+
+    def get_response(self, messages: list[dict[str, str]]) -> str:
+        """Get a response from the LLM.
+
+        Args:
+            messages: A list of message dictionaries.
+
+        Returns:
+            The LLM's response as a string.
+
+        Raises:
+            httpx.RequestError: If the request to the LLM fails.
+        """
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        payload = {
+            "messages": messages,
+            "model": self.model,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "stream": False,
+            "stop": None,
+        }
+
+        try:
+            with httpx.Client(timeout=self.timeout_config) as client:
+                response = client.post(self.api_url+"/chat/completions", headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+
+        except httpx.RequestError as e:
+            logging.exception("ex:")
+            error_message = f"Error getting LLM response: {str(e)}"
+            logging.error(error_message)
+
+            if isinstance(e, httpx.HTTPStatusError):
+                status_code = e.response.status_code
+                logging.error(f"Status code: {status_code}")
+                logging.error(f"Response details: {e.response.text}")
+
+            return (
+                f"I encountered an error: {error_message}. "
+                "Please try again or rephrase your request."
+            )
 
 
 async def async_initialize_agent():
@@ -177,18 +239,52 @@ def fetch_billing_info():
 
 def query_question(user_input: str):
     agent_executor, config = initialize_agent()
-    response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
-    print("response:", response['messages'])
+    auto_save_think = int(os.environ.get("AUTO_SAVE_THINK"))
     result = ""
-    with open('aa.txt', 'w', encoding='utf-8') as f:
+    if auto_save_think == 1:
+        user_input += "and last save the analysis process and give me a link"
+        response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
+        with open('process.txt', 'w', encoding='utf-8') as f:
+            for message in response['messages']:
+                f.write(f"{message}\n")
+                f.flush()
+                if hasattr(message, 'name') and message.name is not None:
+                    result += message.content+"\n"
+        space_did = os.getenv("STORACHA_SPACE_DID")
+        auth_secret = os.getenv("STORACHA_AUTH_SECRET")
+        auth_token = os.getenv("STORACHA_AUTH_TOKEN")
+        storacha_client = StorachaClient(auth_secret=auth_secret, auth_token=auth_token)
+        storacha_client.store_file(space_did, "process.txt")
+        cid = storacha_client.upload_file(space_did, "process.txt")
+        # Generate download URL
+        download_url = get_file_url(cid)
+        msg = f"Analysis processing save successfully, link: {download_url}"
+        result += msg+"\n"
+        os.remove("process.txt")
+    else:
+        response = agent_executor.invoke({"messages": [HumanMessage(content=user_input)]}, config)
+        print("response:", response['messages'])
         for message in response['messages']:
-            f.write(f"{message}\n")
-            f.flush()
-            print("name: ", message.name)
+            print("msg:", message)
             if hasattr(message, 'name') and message.name is not None:
-                result = message.content
-        print("result: ", result)
-    return result
+                result += message.content+"\n"
+
+    print("result: ", result)
+    prompt = f"""Based on the information provided below:
+    {result}
+
+    Generate a final summary without adding any external content. Follow these rules:
+    1. Turn raw data into a natural, conversational response
+    2. Keep it concise yet informative
+    3. Focus on the most relevant points
+    4. Use the context of the user's question appropriately
+    5. Don’t just repeat the original data"""
+
+    llm = ChatOpenAI(model=os.getenv('LLM_MODEL'), base_url=os.getenv('LLM_BASE_URL'), api_key=os.getenv("LLM_API_KEY"))
+    print("prompt:", prompt)
+    response = llm.create([HumanMessage(content=prompt)])
+    logging.info("\nFinal response: %s", response)
+    return response.content
 
 
 def start_periodic_fetch():

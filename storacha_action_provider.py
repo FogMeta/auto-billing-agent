@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from coinbase_agentkit import ActionProvider, create_action, EvmWalletProvider
 from coinbase_agentkit.network import Network
@@ -12,8 +12,6 @@ class SaveAnalysisSchema(BaseModel):
     """Schema for saving analysis content."""
     content: str = Field(..., description="Analysis content to be saved")
     title: str = Field(..., description="Title of the analysis")
-    invoice_number: str = Field(..., description="Invoice identification number")
-    invoice_date: str = Field(..., description="Invoice date")
 
 
 class StorachaActionProvider(ActionProvider[EvmWalletProvider]):
@@ -36,8 +34,8 @@ class StorachaActionProvider(ActionProvider[EvmWalletProvider]):
             Saves the analysis result to Storacha storage and returns a download link.
     
             Input parameters:
-            - invoice_number: Invoice identification number
-            - invoice_date: Date of the invoice
+            - content: The analysis content to be saved
+            - title: Title for the analysis file
     
             Returns:
             - Download URL if successful
@@ -50,8 +48,13 @@ class StorachaActionProvider(ActionProvider[EvmWalletProvider]):
             validated_args = SaveAnalysisSchema(**args)
 
             # Generate filename with timestamp
-            filename = f"{validated_args.invoice_number}_{validated_args.invoice_date}.txt"
-            filename = "aa.txt"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{validated_args.title}_{timestamp}.txt"
+
+            # Save content to temporary file
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(validated_args.content)
+
             try:
                 # Upload to Storacha
                 self.storacha_client.store_file(self.space_did, filename)
@@ -81,10 +84,5 @@ class StorachaActionProvider(ActionProvider[EvmWalletProvider]):
 
 
 def storacha_action_provider() -> StorachaActionProvider:
-    """Create a new instance of the bill action provider.
-
-    Returns:
-        A new bill action provider instance.
-
-    """
+    """Create a new instance of the bill action provider."""
     return StorachaActionProvider()
