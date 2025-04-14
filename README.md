@@ -1,42 +1,32 @@
-# CDP Agentkit LangChain Extension Examples - Chatbot Python
+### Config `.env`
+```
+CDP_API_KEY_NAME="test" # Place your CDP API key name here
+CDP_API_KEY_PRIVATE_KEY="<CDP_API_KEY_PRIVATE_KEY>" # Place your CDP API key private key here
+PRIVATE_KEY="YOUR_PRIVATE_KEY"
+LLM_API_KEY="YOUR_LLM_API_KEY"
+LLM_MODEL="meta-llama/Llama-3.3-70B-Instruct"
+LLM_BASE_URL="https://inference.nebulablock.com/v1"
 
-This example demonstrates an agent setup as a terminal style chatbot with access to the full set of CDP Agentkit actions.
+TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
 
-## Ask the chatbot to engage in the Web3 ecosystem!
-- "Transfer a portion of your ETH to a random address"
-- "What is the price of BTC?"
-- "Deploy an NFT that will go super viral!"
-- "Deploy an ERC-20 token with total supply 1 billion"
-
-## Requirements
-- Python 3.10+
-- Poetry for package management and tooling
-  - [Poetry Installation Instructions](https://python-poetry.org/docs/#installation)
-- [CDP API Key](https://portal.cdp.coinbase.com/access/api)
-- [OpenAI API Key](https://platform.openai.com/docs/quickstart#create-and-export-an-api-key)
-
-### Checking Python Version
-Before using the example, ensure that you have the correct version of Python installed. The example requires Python 3.10 or higher. You can check your Python version by running:
-
-```bash
-python --version
-poetry --version
+AUTO_SAVE_THINK=1
+STORACHA_SPACE_DID="<YOUR_STORACHA_SPACE_DID>"
+STORACHA_AUTH_SECRET="YOUR_STORACHA_AUTH_SECRET"
+STORACHA_AUTH_TOKEN="<YOUR_STORACHA_AUTH_TOKEN>"
 ```
 
-## Installation
+### Setup build and compile environment
 ```bash
-poetry install
+# Create a virtual environment  
+python3 -m venv myenv
+````
+# Install package
+```bash
+pip install -r requirements.txt
 ```
 
-## Run the Chatbot
-
-### Set ENV Vars
-- Ensure the following ENV Vars are set:
-  - "CDP_API_KEY_NAME"
-  - "CDP_API_KEY_PRIVATE_KEY"
-  - "OPENAI_API_KEY"
-  - "NETWORK_ID" (Defaults to `base-sepolia`)
-
-```bash
-poetry run python chatbot.py
-``` 
+### Start telegram bot
+```
+#!/bin/bash
+python telegram_bot.py >> telegram.log 2>&1 &
+```
