@@ -91,3 +91,12 @@ Users can easily interact with the billing agent via Telegram. Just upload an in
 - Payment status updates
 
 > 📌 *Demo illustration*
+![auto-billing](https://github.com/user-attachments/assets/e4f11aae-7dc5-4b6d-8efe-00fd175adaf4)
+![invoice-process-1](https://github.com/user-attachments/assets/5844eb81-acc1-46e2-88c6-9690d20cca1f)
+![invoice-process-2](https://github.com/user-attachments/assets/2968a41d-2b65-472c-94ae-e859911e631d)
+
+![invoice-result-1](https://github.com/user-attachments/assets/57228432-aa41-4b72-ac9c-579cc9c54242)
+![invoice-result-2](https://github.com/user-attachments/assets/5caef471-dd9f-407b-a842-6edb1c2bcbbb)
+
+
+
