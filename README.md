@@ -1,6 +1,8 @@
 # Auto-Billing-Agent
 
-**Auto-Billing-Agent** is an AI-powered invoice automation tool that allows users to interact via natural language to upload, parse, analyze, and process invoices — including payment execution and full data traceability. Powered by LLMs (e.g., LLaMA 3 70B) and integrated with **[Storacha](https://storacha.network/)** for secure data storage, this agent automates the entire billing lifecycle.
+**Auto-Billing-Agent** is an AI-powered invoice automation tool that allows users to interact via natural language to upload, parse, analyze, and process invoices — including payment execution and full data traceability. Powered by LLMs (e.g., LLaMA 3 70B) and integrated with **[Storacha(https://storacha.network/)** for secure data storage, this agent automates the entire billing lifecycle.
+
+The project is built on [**Coinbase's AgentKit**](https://github.com/coinbase/agentkit), which leverages **Langchain's powerful function calling capabilities**, enabling flexible and intelligent task orchestration. It is further integrated with [**Storacha's decentralized storage**](https://storacha.network/), making data handling secure, scalable, and traceable.
 
 It supports:
 - Natural language-driven invoice parsing and payment
@@ -21,7 +23,7 @@ It supports:
 
 ---
 
-## 🧹 Installation Steps
+## 🧩 Installation Steps
 
 ### 1. Configure `.env`  
 Create a `.env` file in the project root with the following content:
@@ -72,7 +74,7 @@ To use [Storacha](https://storacha.network/) for data storage, follow these step
    👉 https://docs.storacha.network/how-to/http-bridge/
 
 2. **Alternatively, use the web console:**  
-   👉 [Storacha Console](https://console.storacha.network/)
+   👉 Storacha Console:https://console.storacha.network/
 
 3. Paste the generated values into your `.env` file under:
    - `STORACHA_SPACE_DID`
